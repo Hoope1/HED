@@ -74,7 +74,7 @@ Verzeichnisstruktur
 
 ├── main_pipeline.py          # Hauptskript mit Streamlit-App
 ├── requirements.txt          # Alle Python-Abhängigkeiten
-├── run_pipeline.bat          # Windows-Batch-Skript zur Einrichtung & Ausführung
+├── setup_pipeline.bat        # Windows-Batch-Skript zur Einrichtung & Ausführung
 ├── models/
 │   ├── hed/
 │   │   ├── deploy.prototxt   # HED-Modellstruktur
@@ -107,7 +107,7 @@ cd <repository-ordner>
 
 
 2. Virtuelle Umgebung einrichten (Windows)
-Doppelklick auf run_pipeline.bat oder manuell:
+Doppelklick auf setup_pipeline.bat oder manuell:
 
 python -m venv .venv
 .venv\Scripts\activate.bat
@@ -233,7 +233,7 @@ Automatisch gestarteter HTTP-Server in 09_previews auf Port 8000 mittels http.se
 
 ---
 
-Batch-Skript (run_pipeline.bat)
+Batch-Skript (setup_pipeline.bat)
 
 @echo off
 REM Automatisch virtuelle Umgebung erstellen

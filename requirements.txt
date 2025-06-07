@@ -2,8 +2,8 @@ streamlit
 opencv-python
 numpy
 torch
+torchvision
 tk
-potrace
 svglib
 reportlab
 Pillow
