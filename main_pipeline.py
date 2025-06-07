@@ -20,8 +20,13 @@ import sys
 # === MODEL-QUELLEN ===
 HED_PROTO_URL = "https://raw.githubusercontent.com/s9xie/hed/master/examples/hed/deploy.prototxt"
 HED_MODEL_URL = "https://vcl.ucsd.edu/hed/hed_pretrained_bsds.caffemodel"
-PIDINET_MODEL_URL = "https://github.com/hellozhuo/pidinet/releases/download/v0.1.0/pidinet_v2_converted.pth"
-PIDINET_PY_URL = "https://raw.githubusercontent.com/hellozhuo/pidinet/main/models/pidinet.py"
+PIDINET_MODEL_URL = "https://raw.githubusercontent.com/hellozhuo/pidinet/master/trained_models/table5_pidinet.pth"
+PIDINET_FILES = {
+    "pidinet.py": "https://raw.githubusercontent.com/hellozhuo/pidinet/master/models/pidinet.py",
+    "ops.py": "https://raw.githubusercontent.com/hellozhuo/pidinet/master/models/ops.py",
+    "config.py": "https://raw.githubusercontent.com/hellozhuo/pidinet/master/models/config.py",
+    "ops_theta.py": "https://raw.githubusercontent.com/hellozhuo/pidinet/master/models/ops_theta.py",
+}
 
 # === LOKALE DATEIPFADE ===
 Path("models/hed").mkdir(parents=True, exist_ok=True)
@@ -43,15 +48,31 @@ def download(url, path):
 download(HED_PROTO_URL, HED_PROTO)
 download(HED_MODEL_URL, HED_MODEL)
 download(PIDINET_MODEL_URL, PIDINET_MODEL)
-download(PIDINET_PY_URL, PIDINET_PY)
+for fname, url in PIDINET_FILES.items():
+    download(url, f"models/sae/{fname}")
 
 # === PiDiNet laden ===
-spec = importlib.util.spec_from_file_location("pidinet", PIDINET_PY)
+sys.modules.setdefault("sae", importlib.util.module_from_spec(importlib.util.spec_from_loader("sae", loader=None)))
+for file in PIDINET_FILES:
+    if file != "pidinet.py":
+        mod_name = f"sae.{file[:-3]}"
+        spec = importlib.util.spec_from_file_location(mod_name, f"models/sae/{file}")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[mod_name] = module
+        spec.loader.exec_module(module)
+spec = importlib.util.spec_from_file_location("sae.pidinet", PIDINET_PY)
 pidinet = importlib.util.module_from_spec(spec)
+sys.modules["sae.pidinet"] = pidinet
 sys.modules["pidinet"] = pidinet
 spec.loader.exec_module(pidinet)
 
-pidinet_cfg = pidinet.pidinet_converted()
+class _Args:
+    def __init__(self):
+        self.config = "carv4"
+        self.dil = True
+        self.sa = True
+
+pidinet_cfg = pidinet.pidinet_converted(_Args())
 sae_model = pidinet.PiDiNet(pidinet_cfg)
 sae_model.load_state_dict(torch.load(PIDINET_MODEL, map_location="cpu"))
 sae_model.eval().to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
@@ -136,8 +157,9 @@ if input_dir and Path(input_dir).exists():
             c.save()
 
             # === Vorschau ===
+            combined_color = cv2.cvtColor(combined, cv2.COLOR_GRAY2BGR)
             preview = np.hstack((cv2.resize(img, (300, 300)),
-                                 cv2.resize(combined, (300, 300))))
+                                 cv2.resize(combined_color, (300, 300))))
             cv2.imwrite(f"09_previews/{file.name}", preview)
 
             progress.progress(int((i+1) / total * 100))
